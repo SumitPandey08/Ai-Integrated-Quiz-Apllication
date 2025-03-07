@@ -43,7 +43,7 @@ function Navbar() {
     <nav className="bg-black text-white shadow-md">
       <div className="container mx-auto py-3 flex justify-between items-center">
         <Link to="/">
-          <img src={image} alt="Site Logo" className="h-16 w-auto object-contain sm:w-20" />
+          <img src={image} alt="Site Logo" className="h-16 w-auto object-contain" />
         </Link>
 
         <button

@@ -4,25 +4,26 @@ import { useNavigate, Link } from 'react-router-dom';
 const QuizHome = () => {
   const [topic, setTopic] = useState('');
   const [maxQuestions, setMaxQuestions] = useState(5);
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
+  const isLoggedIn = localStorage.getItem('token');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
-  
+
     if (!topic.trim()) {
       alert('Please enter a topic.');
       setIsLoading(false);
       return;
     }
-  
+
     if (maxQuestions < 1) {
       alert('Please enter a valid number of questions.');
       setIsLoading(false);
       return;
     }
-  
+
     try {
       const response = await fetch('http://localhost:3210/api/user/quizzes/ai', {
         method: 'POST',
@@ -31,9 +32,9 @@ const QuizHome = () => {
         },
         body: JSON.stringify({ topic, maxQuestions }),
       });
-  
+
       const result = await response.json();
-  
+
       if (response.ok) {
         // Directly pass the result from the server to the /quizid route's state
         navigate('/quizid', { state: result });
@@ -48,7 +49,7 @@ const QuizHome = () => {
     }
   };
 
-  return (
+  return isLoggedIn ? (
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
       style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b2a6dad11501a861af208c9480c97.jpg)` }}
@@ -92,13 +93,27 @@ const QuizHome = () => {
           >
             {isLoading ? 'Creating Quiz...' : 'Start Quiz'}
           </button>
-        </form>
 
-        <div className="mt-4 text-center">
-          <Link to="/" className="text-blue-500 hover:underline">
-            Back to Home
-          </Link>
-        </div>
+          <div className="mt-4 text-center">
+            <Link to="/" className="text-blue-500 hover:underline">
+              Back to Home
+            </Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  ) : (
+    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="text-center p-8 bg-gray-800 rounded-lg shadow-md">
+        <p className="text-lg text-gray-300 mb-4">
+          You are not logged in. Please log in to take a quiz.
+        </p>
+        <Link
+          to="/login"
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Login
+        </Link>
       </div>
     </div>
   );
