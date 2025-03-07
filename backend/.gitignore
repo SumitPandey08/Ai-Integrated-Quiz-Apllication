@@ -1,6 +1,99 @@
-# Ignore the .env file
-.env
+# OS generated files #
+######################
+.DS_Store
+Thumbs.db
 
-# Ignore other common environment files
+# Node.js #
+############
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json # Only if you don't want to commit package locks
+yarn.lock       # Only if you don't want to commit yarn locks
+
+# Environment files #
+#####################
+.env
 .env.local
 .env.*.local
+.env.*.development
+.env.*.production
+.env.*.staging
+.env.*.test
+
+# Build results #
+#################
+build
+dist
+out
+.next
+.nuxt
+.cache
+coverage
+
+# Logs and temp files #
+######################
+*.log
+*.tmp
+*.temp
+temp/
+tmp/
+*.swp
+*.swo
+*.pid
+*.seed
+
+# IDE specific files #
+######################
+.idea/
+*.iml
+.vscode/
+.project
+.settings
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.pdb
+*.user
+*.bak
+*.orig
+*.bin
+*.obj
+
+# Dependency directories (if you manage them manually) #
+#######################################################
+lib/
+vendor/
+
+# Compiled source #
+###################
+*.py[cod] # Python compiled files
+*.class # Java class files
+*.o # Object files
+
+# Uploads #
+##########
+uploads/
+
+# Specific files you don't want to track #
+##########################################
+config/secrets.json  # Example: sensitive configuration
+credentials.json
+auth.json
+
+# Docker #
+##########
+docker-compose.override.yml
+.dockerenv
+
+# macOS #
+#########
+.AppleDouble
+.LSOverride
+
+# Windows thumbnails cache #
+#############################
+ehthumbs.db
+[Dd]esktop.ini
