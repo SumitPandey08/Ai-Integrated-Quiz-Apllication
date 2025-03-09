@@ -1,6 +1,3 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
@@ -10,6 +7,9 @@ import {Route , Routes , BrowserRouter} from 'react-router-dom'
 import QuizHome from './pages/QuizHome'
 import QuizStart from './pages/QuizStart'
 import LogoutPage from './pages/LogOut'
+import Profile from './pages/Profile'
+import About from './pages/About'
+import Contact from './pages/Contact'
 function App() {
   
 
@@ -23,6 +23,9 @@ function App() {
       <Route path='/quiz' element={<QuizHome/>}/>
       <Route path='/quizid' element={<QuizStart/>} />
       <Route path='/logout' element={<LogoutPage/>}/>
+      <Route path='/profile' element={<Profile/>} />
+      <Route path='/about' element={<About/>} />
+      <Route path='/contact' element={<Contact/>}/>
     </Routes>
     
     </BrowserRouter>

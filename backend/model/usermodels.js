@@ -21,6 +21,10 @@ const UserSchema = new Schema({
         trim: true,
         unique: true, // Enforce uniqueness
     },
+    avatar :{
+        type : String, //cloud  
+        required : false
+    } ,
     password: {
         type: String,
         required: true,

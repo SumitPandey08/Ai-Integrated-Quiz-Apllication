@@ -6,7 +6,7 @@ const LogoutButton = ({ onLogout }) => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/user/logout`, {
+      const response = await fetch(`http://localhost:3120/api/user/logout`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
