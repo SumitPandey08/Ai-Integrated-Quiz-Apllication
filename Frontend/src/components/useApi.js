@@ -1,38 +1,54 @@
-
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const useApi = () => {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const fetchData = useCallback(async (url, options = {}) => {
     setLoading(true);
     setError(null);
+
     try {
       const response = await fetch(url, options);
 
       if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          navigate('/login');
-          return;
+        let errorObj = {
+          status: response.status,
+          message: `API request failed with status: ${response.status}`,
+          data: null,
+        };
+
+        try {
+          errorObj.data = await response.json();
+          if (errorObj.data && errorObj.data.message) {
+            errorObj.message = errorObj.data.message;
+          } else if (errorObj.data) {
+            errorObj.message = JSON.stringify(errorObj.data);
+          }
+        } catch (jsonError) {
+          try {
+            errorObj.message = await response.text();
+          } catch (textError) {
+            console.error('Error parsing error response as Text:', textError, response);
+          }
         }
-        const errorData = await response.json();
-        setError(errorData.message || `Failed: Status ${response.status}`);
+
+        setError(errorObj);
+        console.error('API request failed:', errorObj); // Log failure
         return;
       }
 
       const result = await response.json();
       setData(result);
+      console.log('API request successful:', result); // Log success
     } catch (err) {
-      setError('An unexpected error occurred.');
+      setError({ message: 'An unexpected error occurred.', error: err });
+      console.error('API request error:', err); // Log catch failure
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, []); // Removed navigate dependency
 
   return { data, error, loading, fetchData };
 };

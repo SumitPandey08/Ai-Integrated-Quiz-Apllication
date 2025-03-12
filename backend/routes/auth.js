@@ -1,22 +1,18 @@
+// auth.route.js
 import express from 'express';
 import { register, login, logOut } from '../controllers/authController.js';
-import { createQuizWithAI, getAllQuizzes } from '../controllers/quiz.controller.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
-import { upload } from '../middlewares/multer.js';
-import { updateProfile, getProfile } from '../controllers/profile.controller.js';
+import { createQuizWithAI, getAllQuizzes } from '../controllers/quiz.controller.js'; // Import quiz controllers
 
 const router = express.Router();
 
+
 router.post('/register', register);
 router.post('/login', login);
-router.route('/logout').post(verifyJWT, logOut);
+router.post('/logout', verifyJWT, logOut);
 
-// Profile Routes
-router.route('/profile')
-  .post(verifyJWT, upload.single('avatar'), updateProfile)
-  .get(verifyJWT, getProfile); //added get profile route.
 
 router.get('/quizzes', getAllQuizzes);
-router.post('/quizzes/ai', createQuizWithAI);
+router.post('/quizzes/ai', verifyJWT, createQuizWithAI); // Added verifyJWT
 
 export default router;

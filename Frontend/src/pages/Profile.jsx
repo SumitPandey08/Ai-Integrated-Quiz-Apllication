@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import useApi from '../components/useApi'; // Import the custom hook
+import useApi from '../components/useApi';
 
 const Profile = () => {
   const { data: profile, error, loading, fetchData } = useApi();
@@ -7,7 +7,7 @@ const Profile = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      fetchData('http://localhost:3210/api/user/profile', {
+      fetchData('/api/user/profile', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -18,8 +18,8 @@ const Profile = () => {
   }, [fetchData]);
 
   if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!profile) return null; // Or a placeholder
+  if (error) return <div>Error: {error.message}</div>; // Corrected line
+  if (!profile) return null;
 
   return (
     <div>

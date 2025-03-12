@@ -80,6 +80,7 @@ export const login = async (req, res) => {
 
     console.log("Email:", email); // Log the email
     console.log("Password:", password); // Log the password
+    console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
     try {
         let user = await User.findOne({ email });
