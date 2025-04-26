@@ -18,7 +18,9 @@ const Login = () => {
       const result = await loginUser(email, password);
 
       if (result.success) {
-        localStorage.setItem("token", result.token); // Store token in localStorage
+        localStorage.setItem("token", result.token); // Store access token
+        localStorage.setItem("refreshToken", result.refreshToken); // Store refresh token
+        localStorage.setItem("user", JSON.stringify(result.user)); // Store user info (optional)
         setMessage("Login successful!");
         setIsError(false);
         navigate("/");

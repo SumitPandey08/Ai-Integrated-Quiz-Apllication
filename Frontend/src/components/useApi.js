@@ -8,9 +8,11 @@ const useApi = () => {
   const fetchData = useCallback(async (url, options = {}) => {
     setLoading(true);
     setError(null);
+    console.log('useApi: Fetching URL:', url, 'with options:', options); // Log before fetch
 
     try {
       const response = await fetch(url, options);
+      console.log('useApi: Response received:', response); // Log the raw response
 
       if (!response.ok) {
         let errorObj = {
@@ -30,25 +32,26 @@ const useApi = () => {
           try {
             errorObj.message = await response.text();
           } catch (textError) {
-            console.error('Error parsing error response as Text:', textError, response);
+            console.error('useApi: Error parsing error response as text:', textError, response);
           }
         }
 
+        console.error('useApi: API request failed:', errorObj);
         setError(errorObj);
-        console.error('API request failed:', errorObj); // Log failure
         return;
       }
 
       const result = await response.json();
+      console.log('useApi: API request successful, data:', result); // Log successful data
       setData(result);
-      console.log('API request successful:', result); // Log success
     } catch (err) {
       setError({ message: 'An unexpected error occurred.', error: err });
-      console.error('API request error:', err); // Log catch failure
+      console.error('useApi: Fetch error:', err); // Log fetch errors
     } finally {
       setLoading(false);
+      console.log('useApi: Fetch completed. Loading:', loading); // Log after completion
     }
-  }, []); // Removed navigate dependency
+  }, []);
 
   return { data, error, loading, fetchData };
 };

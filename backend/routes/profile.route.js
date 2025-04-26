@@ -1,13 +1,13 @@
 // profile.route.js
 import express from 'express';
-import { verifyJWT } from '../middlewares/auth.middleware.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 import { upload } from '../middlewares/multer.js';
 import { updateProfile, getProfile } from '../controllers/profile.controller.js';
 
 const router = express.Router();
 
-router.route('/') 
-  .post(verifyJWT, upload.single('avatar'), updateProfile)
-  .get(verifyJWT, getProfile);
+router.route('/')
+  .post(authMiddleware, upload.single('avatar'), updateProfile)
+  .get(authMiddleware, getProfile);
 
 export default router;
