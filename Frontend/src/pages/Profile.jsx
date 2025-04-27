@@ -1,53 +1,111 @@
-import React, { useEffect, useState } from 'react'; // Import useState
+import React, { useEffect, useState } from 'react';
 import useApi from '../components/useApi';
+import { jwtDecode } from 'jwt-decode';
 
 const Profile = () => {
-  const { data: profile, error, loading, fetchData } = useApi();
-  const [token, setToken] = useState(localStorage.getItem('token')); // Add state for token
+    const { data: profile, error: profileError, loading: profileLoading, fetchData: fetchProfile } = useApi();
+    const [userId, setUserId] = useState('');
+    const token = localStorage.getItem('token');
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    setToken(storedToken); // Update token state
+    useEffect(() => {
+        if (token) {
+            try {
+                const decodedToken = jwtDecode(token);
+                setUserId(decodedToken.id || decodedToken._id);
+            } catch (error) {
+                console.error('Error decoding token:', error);
+            }
+        }
+    }, [token]);
 
-    if (storedToken) {
-      console.log('Profile: Token found in localStorage:', storedToken);
-      fetchData('http://localhost:3210/api/user/profile', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${storedToken}`,
-        },
-      });
-    } else {
-      console.log('Profile: No token found in localStorage.');
-    }
-  }, [fetchData]);
+    useEffect(() => {
+        if (token) {
+            fetchProfile('http://localhost:3210/api/user/profile', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+        }
+    }, [token, fetchProfile]);
 
-  useEffect(() => {
-    console.log('Profile: Loading state:', loading);
-  }, [loading]);
+    if (profileLoading) return (
+        <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
+            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b2a6dad11501a861af208c9480c97.jpg)` }}>
+            <div className="text-center p-12 max-w-3xl bg-black bg-opacity-80 rounded-2xl shadow-2xl relative z-10 text-white">
+                Loading Profile...
+            </div>
+        </div>
+    );
 
-  useEffect(() => {
-    console.log('Profile: Error state:', error);
-  }, [error]);
+    if (profileError) return (
+        <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
+            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b2a6dad11501a861af208c9480c97.jpg)` }}>
+            <div className="text-center p-12 max-w-3xl bg-black bg-opacity-80 rounded-2xl shadow-2xl relative z-10 text-white">
+                Error: {profileError?.message}
+            </div>
+        </div>
+    );
 
-  useEffect(() => {
-    console.log('Profile: Profile data state:', profile);
-  }, [profile]);
+    if (!profile) return null;
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error?.message}</div>;
-  if (!profile) return null;
+    return (
+        <div
+            className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
+            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b2a6dad11501a861af208c9480c97.jpg)` }}
+        >
+            <div className="text-center p-12 max-w-3xl bg-black bg-opacity-80 rounded-2xl shadow-2xl relative z-10 text-white">
+                <h2 className="text-4xl font-extrabold mb-6 tracking-wide text-blue-400">Your Profile</h2>
+                <p className="text-lg mb-2">Name: <span className="text-blue-300">{profile.name}</span></p>
+                <p className="text-lg mb-2">Username: <span className="text-blue-300">{profile.username}</span></p>
+                <p className="text-lg mb-6">Email: <span className="text-blue-300">{profile.email}</span></p>
 
-  return (
-    <div>
-      <h2>Profile</h2>
-      <p>Name: {profile.name}</p>
-      <p>Username: {profile.username}</p>
-      <p>Email: {profile.email}</p>
-      {/* {profile.avatar && <img src={profile.avatar} alt="Profile Avatar" style={{ maxWidth: '200px' }} />} */}
-    </div>
-  );
+                <h3 className="text-2xl font-semibold mb-4 text-green-400">Your Rating</h3>
+                {profile.rating && (
+                    <div>
+                        <p className="text-lg mb-2">Attempted Quizzes: <span className="text-green-300">{profile.rating.attemptedQuizzes}</span></p>
+                        <p className="text-lg mb-2">Completed Quizzes: <span className="text-green-300">{profile.rating.completedQuizzes}</span></p>
+                        <p className="text-lg mb-2">Overall Score: <span className="text-green-300">{profile.rating.overallScore ? profile.rating.overallScore.toFixed(2) : 'N/A'}</span></p>
+                        <p className="text-lg mb-6">Average Accuracy: <span className="text-green-300">{profile.rating.averageAccuracy ? profile.rating.averageAccuracy.toFixed(2) : 'N/A'}%</span></p>
+
+                        {profile.rating.categoryScores && Object.keys(profile.rating.categoryScores).length > 0 && (
+                            <div>
+                                <h4 className="text-xl font-semibold mt-4 mb-2 text-yellow-400">Category Ratings</h4>
+                                <ul className="list-none space-y-1">
+                                    {Object.entries(profile.rating.categoryScores).map(([category, score]) => (
+                                        <li key={category} className="text-yellow-300">
+                                            {category}: {score ? score.toFixed(2) : 'N/A'}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <h3 className="text-2xl font-semibold mt-8 mb-4 text-purple-400">Quiz History</h3>
+                {profile?.history && profile.history.length > 0 ? (
+                    <ul className="list-none space-y-4">
+                        {profile.history.map(item => (
+                            <li key={item._id} className="bg-gray-800 rounded-md p-4 shadow-md">
+                                <p className="font-semibold text-lg text-purple-300">Quiz: {item.quizId?.title || 'Unknown'}</p>
+                                <p className="text-gray-300">Category: {item.category}</p>
+                                <p className="text-gray-300">Difficulty: {item.difficulty}</p>
+                                <p className="text-gray-300">Score: {item.score} / {item.quizId?.questions?.length || 'Unknown'}</p>
+                                <p className="text-gray-300">Accuracy: {item.accuracy?.toFixed(2)}%</p>
+                                <p className="text-gray-300">Rating: {item.userRating?.toFixed(1)} / {item.ratingOutOf}</p>
+                                <p className="text-sm text-gray-500">Taken on: {new Date(item.dateTaken).toLocaleDateString()} {new Date(item.dateTaken).toLocaleTimeString()}</p>
+                                {/* You can add more details here if needed */}
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="text-gray-400 italic">No quiz history available yet.</p>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default Profile;

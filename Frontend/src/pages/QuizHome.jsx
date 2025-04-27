@@ -5,6 +5,7 @@ const QuizHome = () => {
   const [topic, setTopic] = useState('');
   const [maxQuestions, setMaxQuestions] = useState(5);
   const isLoggedIn = localStorage.getItem('token');
+  const authToken = localStorage.getItem('token');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -29,6 +30,7 @@ const QuizHome = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({ topic, maxQuestions }),
       });
@@ -36,8 +38,11 @@ const QuizHome = () => {
       const result = await response.json();
 
       if (response.ok) {
-        // Directly pass the result from the server to the /quizid route's state
+        // Corrected navigation path to match your App.js route
         navigate('/quizid', { state: result });
+      } else if (response.status === 401) {
+        alert('Unauthorized. Please log in again.');
+        navigate('/login');
       } else {
         alert(result.message || 'Failed to create quiz.');
       }
