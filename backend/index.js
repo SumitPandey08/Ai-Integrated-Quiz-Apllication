@@ -14,18 +14,22 @@ const app = express();
 
 const allowedOrigin = process.env.FRONTEND_URL;
 
+// CORS middleware (for actual requests)
 const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin || origin === allowedOrigin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // If you need to handle cookies across origins
+  origin: allowedOrigin,
+  credentials: true,
 };
-
 app.use(cors(corsOptions));
+
+// Handle OPTIONS preflight requests explicitly
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(204); // Respond with no content (success)
+});
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
