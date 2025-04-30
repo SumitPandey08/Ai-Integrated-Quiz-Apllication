@@ -6,7 +6,7 @@ import { generateQuizContent } from '../config/genrativeAiService.js';
 // Create a new quiz with AI-generated content
 export const createQuizWithAI = async (req, res) => {
     try {
-        const { topic, maxQuestions, category, difficulty } = req.body; // Added category and difficulty
+        const { topic, maxQuestions, category, difficulty } = req.body;
 
         const quizDataString = await generateQuizContent(topic, maxQuestions);
 
@@ -15,16 +15,26 @@ export const createQuizWithAI = async (req, res) => {
             return res.status(500).json({ message: "Failed to generate quiz content." });
         }
 
-        const quizzes = parseQuizString(quizDataString, category, difficulty); // Pass category and difficulty
+        const questions = parseQuizString(quizDataString, category, difficulty);
 
-        if (!quizzes || quizzes.length === 0) {
+        if (!questions || questions.length === 0) {
             console.error("Failed to parse quiz content for topic:", topic);
             return res.status(500).json({ message: "Failed to parse quiz content." });
         }
 
-        const savedQuizzes = await Quiz.insertMany(quizzes);
+        const newQuiz = new Quiz({
+            title: topic,
+            category: category || 'General',
+            difficulty: difficulty || 'Medium',
+            questions: questions,
+            createdBy: req.user.id,
+            createdAt: new Date(),
+        });
 
-        res.status(201).json(savedQuizzes);
+        const savedQuiz = await newQuiz.save();
+        console.log("AI Quiz created:", savedQuiz); // LOG: Check the saved quiz document
+        res.status(201).json(savedQuiz);
+
     } catch (error) {
         console.error("Error creating quiz with AI:", error);
         res.status(400).json({ message: error.message });
@@ -52,7 +62,6 @@ export const getQuizById = async (req, res) => {
     }
 };
 
-// Function to parse the AI-generated quiz string
 function parseQuizString(quizDataString, category, difficulty) {
     const quizzes = [];
     const questionBlocks = quizDataString.split(/\n\d+\./);
@@ -73,27 +82,30 @@ function parseQuizString(quizDataString, category, difficulty) {
             options.push(line);
         }
 
-        if (question && options.length > 0 && correctAnswer) {
+        if (question && options.length >= 2 && options.length <= 4 && correctAnswer) {
             quizzes.push({
                 question,
                 options,
                 correctAnswer,
                 questionNumber: index + 1,
-                category: category || 'General', // Use provided category or default
-                difficulty: difficulty || 'Medium', // Use provided difficulty or default
+                category: category || 'General',
+                difficulty: difficulty || 'Medium',
             });
+        } else {
+            console.warn("Skipping malformed question:", { question, options, correctAnswer });
         }
     });
 
+    console.log("Parsed Quizzes:", quizzes); // LOG: Check the parsed quizzes
     return quizzes;
 }
+
 
 export const submitQuiz = async (req, res) => {
     try {
         const { userId, quizId, answers } = req.body;
-        const outOfRating = 10; // Enforcing a rating out of 10
+        const outOfRating = 10;
 
-        // 1. Retrieve the user and the quiz
         const user = await User.findById(userId);
         const quiz = await Quiz.findById(quizId);
 
@@ -101,18 +113,15 @@ export const submitQuiz = async (req, res) => {
             return res.status(404).json({ message: 'User or Quiz not found.' });
         }
 
-        // 2. Evaluate the answers and calculate score, accuracy, and question details
         const { correctCount, questionsData } = evaluateQuizSubmission(quiz.questions, answers);
         const totalQuestions = quiz.questions.length;
         const accuracy = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
-
-        // Calculate a rating out of 10
         const userRatingForQuiz = totalQuestions > 0 ? (correctCount / totalQuestions) * outOfRating : 0;
+        const dateTaken = new Date();
 
-        // 3. Update the user's history
         user.history.push({
             quizId: quiz._id,
-            score: correctCount, // Storing the raw correct count as score
+            score: correctCount,
             accuracy: accuracy,
             category: quiz.category,
             difficulty: quiz.difficulty,
@@ -120,35 +129,17 @@ export const submitQuiz = async (req, res) => {
             userRating: userRatingForQuiz,
             questions: questionsData.map(q => ({
                 questionId: q.questionId,
-                userAnswer: answers[q.questionId], // Assuming answers are keyed by question ID
+                userAnswer: answers[q.questionId],
                 isCorrect: q.isCorrect,
-                timeTaken: req.body.timeTaken && req.body.timeTaken[q.questionId] ? req.body.timeTaken[q.questionId] : 0, // Assuming time taken is sent
-                questionDifficulty: quiz.questions.find(qq => qq._id.toString() === q.questionId.toString())?.difficulty, // Get question difficulty from quiz
+                timeTaken: req.body.timeTaken && req.body.timeTaken[q.questionId] ? req.body.timeTaken[q.questionId] : 0,
+                questionDifficulty: quiz.questions.find(qq => qq._id.toString() === q.questionId.toString())?.difficulty,
             })),
-            dateTaken: new Date() // Add the date when the quiz was taken
-            // You might add a feedback field here later
+            dateTaken: dateTaken,
+            totalQuestions: totalQuestions,
         });
 
-        // 4. Update the user's rating (overall metrics)
-        user.rating.attemptedQuizzes++;
-        user.rating.completedQuizzes++; // Assuming they finished the quiz to submit
-
-        // Update overallScore as the average of all quiz ratings
-        const currentOverallScoreSum = user.rating.overallScore * (user.rating.completedQuizzes - 1);
-        user.rating.overallScore = (currentOverallScoreSum + userRatingForQuiz) / user.rating.completedQuizzes;
-
-        // Update averageAccuracy
-        const currentAverageAccuracySum = user.rating.averageAccuracy * (user.rating.completedQuizzes - 1);
-        user.rating.averageAccuracy = (currentAverageAccuracySum + accuracy) / user.rating.completedQuizzes;
-
-        // Update category scores (average rating per category)
-        const currentCategoryScore = user.rating.categoryScores.get(quiz.category) || 0;
-        const categoryAttemptCount = user.history.filter(h => h.category === quiz.category).length;
-        user.rating.categoryScores.set(quiz.category, (currentCategoryScore * (categoryAttemptCount - 1) + userRatingForQuiz) / categoryAttemptCount);
-
-        // 5. Save the updated user
         await user.save();
-
+        console.log("Quiz submitted. User history updated:", user.history.slice(-1)[0]);
         res.status(200).json({ message: 'Quiz submitted successfully.', score: correctCount, accuracy, rating: userRatingForQuiz, outOf: outOfRating });
 
     } catch (error) {
@@ -157,14 +148,40 @@ export const submitQuiz = async (req, res) => {
     }
 };
 
-// Helper function to evaluate the quiz submission
+export const getUserHistory = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        console.log("Fetching user history for userId:", userId);
+
+        const user = await User.findById(userId).populate({
+            path: 'history.quizId',
+            select: 'title category difficulty',
+            model: 'Quiz' // Explicitly specify the model
+        });
+
+        console.log("Fetched user:", user);
+        console.log("User history after populate:", user ? user.history : null);
+
+        if (!user) {
+            console.log("User not found with ID:", userId);
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        res.status(200).json(user.history);
+    } catch (error) {
+        console.error('Error fetching user history:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 function evaluateQuizSubmission(quizQuestions, userAnswers) {
     let correctCount = 0;
     const questionsData = [];
 
     quizQuestions.forEach(quizQuestion => {
-        const userAnswer = userAnswers[quizQuestion._id]; // Assuming answers are keyed by question ID
-        const isCorrect = userAnswer && userAnswer.trim().toLowerCase() === quizQuestion.correctAnswer.trim().toLowerCase(); // Adjust comparison as needed
+        const userAnswer = userAnswers[quizQuestion._id];
+        const isCorrect = userAnswer && userAnswer.trim().toLowerCase() === quizQuestion.correctAnswer.trim().toLowerCase();
         questionsData.push({
             questionId: quizQuestion._id,
             isCorrect: isCorrect,
@@ -176,21 +193,3 @@ function evaluateQuizSubmission(quizQuestions, userAnswers) {
 
     return { correctCount, questionsData };
 }
-
-export const getUserHistory = async (req, res) => {
-    try {
-        const userId = req.params.userId;
-
-        // Find the user and populate their history array
-        const user = await User.findById(userId).populate('history.quizId', 'title category questions'); // Populate questions as well
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found.' });
-        }
-
-        res.status(200).json(user.history);
-    } catch (error) {
-        console.error('Error fetching user history:', error);
-        res.status(500).json({ message: error.message });
-    }
-};

@@ -24,20 +24,20 @@ app.use('/api/user/profile', profileRoutes);
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
-  try {
-    await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Server failed to start:', error);
-    process.exit(1);
-  }
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Server failed to start:', error);
+    process.exit(1);
+  }
 };
 
 startServer();
 
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Internal server error' });
+  console.error(err.stack);
+  res.status(500).json({ message: 'Internal server error' });
 });

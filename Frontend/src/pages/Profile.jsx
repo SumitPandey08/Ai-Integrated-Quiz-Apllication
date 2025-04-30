@@ -1,11 +1,15 @@
+// Profile.jsx
 import React, { useEffect, useState } from 'react';
 import useApi from '../components/useApi';
 import { jwtDecode } from 'jwt-decode';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Profile = () => {
     const { data: profile, error: profileError, loading: profileLoading, fetchData: fetchProfile } = useApi();
     const [userId, setUserId] = useState('');
     const token = localStorage.getItem('token');
+    const location = useLocation();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (token) {
@@ -19,8 +23,8 @@ const Profile = () => {
     }, [token]);
 
     useEffect(() => {
-        if (token) {
-            fetchProfile('http://localhost:3210/api/user/profile', {
+        if (token && userId) {
+            fetchProfile(`http://localhost:3210/api/user/profile/${userId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -28,11 +32,34 @@ const Profile = () => {
                 },
             });
         }
-    }, [token, fetchProfile]);
+    }, [token, fetchProfile, userId]);
+
+    useEffect(() => {
+        if (location.state?.shouldRefetch) {
+            fetchProfile(`http://localhost:3210/api/user/profile/${userId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            navigate('/profile', { replace: true, state: {} });
+        }
+    }, [location.state?.shouldRefetch, fetchProfile, navigate, token, userId]);
+
+    useEffect(() => {
+        console.log("Profile Data in Profile Component:", profile);
+        if (profile?.history) {
+            console.log("Quiz History Data:", profile.history);
+            profile.history.forEach(item => {
+                console.log("History Item:", item);
+            });
+        }
+    }, [profile]);
 
     if (profileLoading) return (
         <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
-            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b2a6dad11501a861af208c9480c97.jpg)` }}>
+            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b/2a6dad11501a861af208c9480c97.jpg)` }}>
             <div className="text-center p-12 max-w-3xl bg-black bg-opacity-80 rounded-2xl shadow-2xl relative z-10 text-white">
                 Loading Profile...
             </div>
@@ -41,41 +68,49 @@ const Profile = () => {
 
     if (profileError) return (
         <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
-            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b2a6dad11501a861af208c9480c97.jpg)` }}>
+            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b/2a6dad11501a861af208c9480c97.jpg)` }}>
             <div className="text-center p-12 max-w-3xl bg-black bg-opacity-80 rounded-2xl shadow-2xl relative z-10 text-white">
-                Error: {profileError?.message}
+                Error: {profileError?.message || 'Failed to load profile data.'}
+                {profileError?.data && <pre className="text-sm mt-2">{JSON.stringify(profileError.data, null, 2)}</pre>}
             </div>
         </div>
     );
 
-    if (!profile) return null;
+    if (!profile) return (
+        <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
+            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b/2a6dad11501a861af208c9480c97.jpg)` }}>
+            <div className="text-center p-12 max-w-3xl bg-black bg-opacity-80 rounded-2xl shadow-2xl relative z-10 text-white">
+                No profile data available.
+            </div>
+        </div>
+    );
 
     return (
         <div
             className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
-            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b2a6dad11501a861af208c9480c97.jpg)` }}
+            style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b/2a6dad11501a861af208c9480c97.jpg)` }}
         >
             <div className="text-center p-12 max-w-3xl bg-black bg-opacity-80 rounded-2xl shadow-2xl relative z-10 text-white">
                 <h2 className="text-4xl font-extrabold mb-6 tracking-wide text-blue-400">Your Profile</h2>
-                <p className="text-lg mb-2">Name: <span className="text-blue-300">{profile.name}</span></p>
-                <p className="text-lg mb-2">Username: <span className="text-blue-300">{profile.username}</span></p>
-                <p className="text-lg mb-6">Email: <span className="text-blue-300">{profile.email}</span></p>
+                <p className="text-lg mb-2">Name: <span className="text-blue-300">{profile?.name}</span></p>
+                <p className="text-lg mb-2">Username: <span className="text-blue-300">{profile?.username}</span></p>
+                <p className="text-lg mb-6">Email: <span className="text-blue-300">{profile?.email}</span></p>
 
                 <h3 className="text-2xl font-semibold mb-4 text-green-400">Your Rating</h3>
-                {profile.rating && (
+                {profile?.rating && (
                     <div>
                         <p className="text-lg mb-2">Attempted Quizzes: <span className="text-green-300">{profile.rating.attemptedQuizzes}</span></p>
                         <p className="text-lg mb-2">Completed Quizzes: <span className="text-green-300">{profile.rating.completedQuizzes}</span></p>
-                        <p className="text-lg mb-2">Overall Score: <span className="text-green-300">{profile.rating.overallScore ? profile.rating.overallScore.toFixed(2) : 'N/A'}</span></p>
-                        <p className="text-lg mb-6">Average Accuracy: <span className="text-green-300">{profile.rating.averageAccuracy ? profile.rating.averageAccuracy.toFixed(2) : 'N/A'}%</span></p>
+                        <p className="text-lg mb-2">Overall Score: <span className="text-green-300">{profile.rating.overallScore?.toFixed(2) || 'N/A'}</span></p>
+                        <p className="text-lg mb-6">Average Accuracy: <span className="text-green-300">{profile.rating.averageAccuracy?.toFixed(2) || 'N/A'}%</span></p>
 
-                        {profile.rating.categoryScores && Object.keys(profile.rating.categoryScores).length > 0 && (
+                        {profile?.rating?.categoryScores && Object.keys(profile.rating.categoryScores).length > 0 && (
                             <div>
                                 <h4 className="text-xl font-semibold mt-4 mb-2 text-yellow-400">Category Ratings</h4>
                                 <ul className="list-none space-y-1">
                                     {Object.entries(profile.rating.categoryScores).map(([category, score]) => (
                                         <li key={category} className="text-yellow-300">
-                                            {category}: {score ? score.toFixed(2) : 'N/A'}
+                                            {category}: {score?.toFixed(2) || 'N/A'}
                                         </li>
                                     ))}
                                 </ul>
@@ -90,13 +125,16 @@ const Profile = () => {
                         {profile.history.map(item => (
                             <li key={item._id} className="bg-gray-800 rounded-md p-4 shadow-md">
                                 <p className="font-semibold text-lg text-purple-300">Quiz: {item.quizId?.title || 'Unknown'}</p>
-                                <p className="text-gray-300">Category: {item.category}</p>
-                                <p className="text-gray-300">Difficulty: {item.difficulty}</p>
-                                <p className="text-gray-300">Score: {item.score} / {item.quizId?.questions?.length || 'Unknown'}</p>
-                                <p className="text-gray-300">Accuracy: {item.accuracy?.toFixed(2)}%</p>
-                                <p className="text-gray-300">Rating: {item.userRating?.toFixed(1)} / {item.ratingOutOf}</p>
-                                <p className="text-sm text-gray-500">Taken on: {new Date(item.dateTaken).toLocaleDateString()} {new Date(item.dateTaken).toLocaleTimeString()}</p>
-                                {/* You can add more details here if needed */}
+                                <p className="text-gray-300">Category: {item.quizId?.category || 'N/A'}</p>
+                                <p className="text-gray-300">Difficulty: {item.quizId?.difficulty || 'N/A'}</p>
+                                <p className="text-gray-300">Score: {item.score} / {item.questions?.length || 'Unknown'}</p>
+                                {/* You might want to calculate accuracy on the backend */}
+                                {/* <p className="text-gray-300">Accuracy: {(item.score / item.questions?.length * 100)?.toFixed(2) || 'N/A'}%</p> */}
+                                <p className="text-sm text-gray-500">
+                                    Taken on: {item.attemptedAt ?
+                                        `${new Date(item.attemptedAt).toLocaleDateString()} ${new Date(item.attemptedAt).toLocaleTimeString()}` :
+                                        'Invalid Date'}
+                                </p>
                             </li>
                         ))}
                     </ul>

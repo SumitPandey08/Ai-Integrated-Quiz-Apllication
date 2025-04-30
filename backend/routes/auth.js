@@ -1,8 +1,7 @@
-// auth.route.js
 import express from 'express';
 import { register, login, logOut } from '../controllers/authController.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
-import { createQuizWithAI, getAllQuizzes, submitQuiz, getUserHistory } from '../controllers/quiz.controller.js';
+import { createQuizWithAI, getAllQuizzes, submitQuiz } from '../controllers/quiz.controller.js'; // Removed getUserHistory import
 
 const router = express.Router();
 
@@ -15,8 +14,5 @@ router.post('/logout', authMiddleware, logOut);
 router.get('/quizzes', getAllQuizzes);
 router.post('/quizzes/ai', authMiddleware, createQuizWithAI);
 router.post('/submit-quiz', authMiddleware, submitQuiz);
-
-// User History route
-router.get('/users/history', authMiddleware, getUserHistory);
 
 export default router;

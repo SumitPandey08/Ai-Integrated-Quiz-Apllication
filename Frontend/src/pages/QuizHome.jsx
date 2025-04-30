@@ -1,127 +1,154 @@
+// QuizHome.jsx
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const QuizHome = () => {
-  const [topic, setTopic] = useState('');
-  const [maxQuestions, setMaxQuestions] = useState(5);
-  const isLoggedIn = localStorage.getItem('token');
-  const authToken = localStorage.getItem('token');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const [topic, setTopic] = useState('');
+    const [maxQuestions, setMaxQuestions] = useState(5);
+    const [difficulty, setDifficulty] = useState('Medium');
+    const [category, setCategory] = useState('General');
+    const [error, setError] = useState(null);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setIsLoading(true);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
 
-    if (!topic.trim()) {
-      alert('Please enter a topic.');
-      setIsLoading(false);
-      return;
-    }
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError("Not authenticated.");
+            return;
+        }
 
-    if (maxQuestions < 1) {
-      alert('Please enter a valid number of questions.');
-      setIsLoading(false);
-      return;
-    }
+        try {
+            const response = await fetch('http://localhost:3210/api/user/quizzes/ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ topic, maxQuestions, category, difficulty }),
+            });
 
-    try {
-      const response = await fetch('http://localhost:3210/api/user/quizzes/ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ topic, maxQuestions }),
-      });
+            if (response.ok) {
+                const result = await response.json();
+                console.log("AI Quiz Creation Result:", result);
 
-      const result = await response.json();
+                let quizId;
+                let questions;
 
-      if (response.ok) {
-        // Corrected navigation path to match your App.js route
-        navigate('/quizid', { state: result });
-      } else if (response.status === 401) {
-        alert('Unauthorized. Please log in again.');
-        navigate('/login');
-      } else {
-        alert(result.message || 'Failed to create quiz.');
-      }
-    } catch (error) {
-      alert('An error occurred while creating the quiz.');
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+                // **ADJUST THESE BASED ON YOUR BACKEND RESPONSE STRUCTURE**
+                // Example 1: Quiz ID is directly in 'result' as '_id' and questions are in 'result' as an array.
+                if (result?._id && Array.isArray(result)) {
+                    quizId = result._id;
+                    questions = result;
+                    console.log("Quiz ID found directly in result._id:", quizId);
+                    console.log("Questions found directly in result:", questions);
+                }
+                // Example 2: Quiz ID is in 'result._id' and questions are in 'result.questions'.
+                else if (result?._id && result?.questions && Array.isArray(result.questions)) {
+                    quizId = result._id;
+                    questions = result.questions;
+                    console.log("Quiz ID found in result._id:", quizId);
+                    console.log("Questions found in result.questions:", questions);
+                }
+                // Example 3: Quiz ID is in 'result.id' and 'result' is the questions array.
+                else if (result?.id && Array.isArray(result)) {
+                    quizId = result.id;
+                    questions = result;
+                    console.log("Quiz ID found in result.id:", quizId);
+                    console.log("Questions found directly in result:", questions);
+                }
+                // Add more conditions here to handle other possible structures
+                else {
+                    console.error("Could not determine quiz ID and questions structure from backend response.");
+                }
 
-  return isLoggedIn ? (
-    <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center relative"
-      style={{ backgroundImage: `url(https://i.pinimg.com/originals/88/3b/2a/883b2a6dad11501a861af208c9480c97.jpg)` }}
-    >
-      <div className="text-center p-12 max-w-3xl bg-black bg-opacity-80 rounded-2xl shadow-2xl relative z-10">
-        <h2 className="text-3xl font-bold mb-8 text-blue-400 text-center">Start Quiz</h2>
+                if (quizId && questions?.length > 0) {
+                    navigate('/quizid', { state: { quizId: quizId, questions: questions } });
+                } else {
+                    console.error("Missing quizId or questions. Navigation prevented.");
+                    setError("Failed to start quiz due to missing data.");
+                }
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="topic-selection" className="block text-lg font-semibold text-gray-300 mb-2">
-              Topic For Quiz:
-            </label>
-            <input
-              type="text"
-              id="topic-selection"
-              className="border border-gray-700 rounded-md p-2 w-full bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="question-selection" className="block text-lg font-semibold text-gray-300 mb-2">
-              Number of Questions:
-            </label>
-            <input
-              type="number"
-              id="question-selection"
-              className="border border-gray-700 rounded-md p-2 w-full bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none"
-              min="1"
-              value={maxQuestions}
-              onChange={(e) => setMaxQuestions(parseInt(e.target.value))}
-            />
-          </div>
+            } else {
+                const errorMessage = await response.json();
+                console.error("Failed to create quiz:", errorMessage);
+                setError("Failed to create quiz: " + errorMessage.message);
+            }
+        } catch (error) {
+            console.error("Error creating quiz:", error);
+            setError("Error creating quiz: " + error.message);
+        }
+    };
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={`w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition duration-300 ease-in-out ${
-              isLoading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {isLoading ? 'Creating Quiz...' : 'Start Quiz'}
-          </button>
-
-          <div className="mt-4 text-center">
-            <Link to="/" className="text-blue-500 hover:underline">
-              Back to Home
-            </Link>
-          </div>
-        </form>
-      </div>
-    </div>
-  ) : (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
-      <div className="text-center p-8 bg-gray-800 rounded-lg shadow-md">
-        <p className="text-lg text-gray-300 mb-4">
-          You are not logged in. Please log in to take a quiz.
-        </p>
-        <Link
-          to="/login"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Login
-        </Link>
-      </div>
-    </div>
-  );
+    return (
+        <div className="min-h-screen bg-gray-900 text-white p-8">
+            <h2 className="text-3xl font-semibold mb-8 text-blue-400 text-center">Generate AI Quiz</h2>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
+                <div>
+                    <label htmlFor="topic" className="block text-gray-300 text-sm font-bold mb-2">
+                        Topic:
+                    </label>
+                    <input
+                        type="text"
+                        id="topic"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-800 text-white"
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                        required
+                    />
+                </div>
+                <div>
+                    <label htmlFor="maxQuestions" className="block text-gray-300 text-sm font-bold mb-2">
+                        Number of Questions:
+                    </label>
+                    <input
+                        type="number"
+                        id="maxQuestions"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-800 text-white"
+                        value={maxQuestions}
+                        onChange={(e) => setMaxQuestions(parseInt(e.target.value))}
+                        min="1"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="category" className="block text-gray-300 text-sm font-bold mb-2">
+                        Category:
+                    </label>
+                    <input
+                        type="text"
+                        id="category"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-800 text-white"
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                    />
+                </div>
+                <div>
+                    <label htmlFor="difficulty" className="block text-gray-300 text-sm font-bold mb-2">
+                        Difficulty:
+                    </label>
+                    <select
+                        id="difficulty"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-800 text-white"
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(e.target.value)}
+                    >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
+                <button
+                    type="submit"
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                >
+                    Generate Quiz
+                </button>
+            </form>
+        </div>
+    );
 };
 
 export default QuizHome;
