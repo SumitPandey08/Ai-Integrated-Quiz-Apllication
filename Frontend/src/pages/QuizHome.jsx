@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL; // Get the backend URL from env
+
 const QuizHome = () => {
     const navigate = useNavigate();
     const [topic, setTopic] = useState('');
@@ -21,7 +23,7 @@ const QuizHome = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:3210/api/user/quizzes/ai', {
+            const response = await fetch(`${BACKEND_URL}/api/user/quizzes/ai`, { // Use BACKEND_URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

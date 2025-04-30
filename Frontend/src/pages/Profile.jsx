@@ -4,6 +4,8 @@ import useApi from '../components/useApi';
 import { jwtDecode } from 'jwt-decode';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL; // Get the backend URL from env
+
 const Profile = () => {
     const { data: profile, error: profileError, loading: profileLoading, fetchData: fetchProfile } = useApi();
     const [userId, setUserId] = useState('');
@@ -24,7 +26,7 @@ const Profile = () => {
 
     useEffect(() => {
         if (token && userId) {
-            fetchProfile(`http://localhost:3210/api/user/profile/${userId}`, {
+            fetchProfile(`${BACKEND_URL}/api/user/profile/${userId}`, { // Use BACKEND_URL
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -36,7 +38,7 @@ const Profile = () => {
 
     useEffect(() => {
         if (location.state?.shouldRefetch) {
-            fetchProfile(`http://localhost:3210/api/user/profile/${userId}`, {
+            fetchProfile(`${BACKEND_URL}/api/user/profile/${userId}`, { // Use BACKEND_URL
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

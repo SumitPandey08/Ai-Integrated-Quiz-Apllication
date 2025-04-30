@@ -4,6 +4,8 @@ import Question from '../components/Question';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL; // Get the backend URL from env
+
 const QuizStart = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -91,7 +93,7 @@ const QuizStart = () => {
         console.log("Answers being sent:", answersToSend);
 
         try {
-            const response = await fetch('http://localhost:3210/api/user/submit-quiz', {
+            const response = await fetch(`${BACKEND_URL}/api/user/submit-quiz`, { // Use BACKEND_URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
