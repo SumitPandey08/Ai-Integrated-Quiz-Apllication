@@ -1,27 +1,16 @@
 {
+    
     "version": 2,
-    "builds": [
-      {
-        "src": "index.js", // Or your main backend file (e.g., app.js, server.js)
-        "use": "@vercel/node"
-      }
-    ],
     "routes": [
       {
         "src": "/api/(.*)",
-        "dest": "/index.js" // Or your main backend file
-      },
-      {
-        "src": "/(.*)",
-        "dest": "/index.js" // Handles other potential routes, adjust as needed
+        "dest": "/api/index.js"
       }
     ],
-    "env": {
-      "NODE_ENV": "production",
-      // Add your environment variables here, Vercel will automatically inject them
-      // Example:
-      // "MONGODB_URI": "your_production_mongodb_uri",
-      // "JWT_SECRET": "your_production_jwt_secret",
-      // "PORT": "3000" // Vercel assigns its own port, so this is generally not needed
-    }
+    "builds": [
+      {
+        "src": "index.js",
+        "use": "@vercel/node"
+      }
+    ]
   }
