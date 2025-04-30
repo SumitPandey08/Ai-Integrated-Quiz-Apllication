@@ -12,24 +12,16 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigin = process.env.FRONTEND_URL;
-
-// CORS middleware (for actual requests)
+// WARNING: This configuration allows requests from ANY origin.
+// This is NOT recommended for production applications due to security risks.
 const corsOptions = {
-  origin: allowedOrigin,
+  origin: '*', // Allow all origins
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
+  allowedHeaders: 'Content-Type,Authorization',
 };
+
 app.use(cors(corsOptions));
-
-// Handle OPTIONS preflight requests explicitly
-app.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(204); // Respond with no content (success)
-});
-
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
