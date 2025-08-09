@@ -4,7 +4,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export const loginUser = async (email, password) => {
     try {
-        const response = await fetch(`${BACKEND_URL}/api/user/login`, {
+        const response = await fetch(`${VITE_BACKEND_URL}/api/user/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -32,7 +32,7 @@ export const loginUser = async (email, password) => {
 // You might have a similar function for signup:
 export const signupUser = async (name, email, username, password) => {
     try {
-        const response = await fetch(`${BACKEND_URL}/api/user/register`, {
+        const response = await fetch(`${VITE_BACKEND_URL}/api/user/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
